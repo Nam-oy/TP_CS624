@@ -1,63 +1,102 @@
+// routes/tasks.js
 import express from "express";
 import db from "../db/conn.mjs";
 import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
-// This section will help you get a list of all the records.
+// Get all tasks
 router.get("/", async (req, res) => {
-  let collection = await db.collection("tasks");
-  let results = await collection.find({}).toArray();
-  res.send(results).status(200);
+  try {
+    const collection = db.collection("tasks");
+    const results = await collection.find({}).toArray();
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Failed to fetch tasks:", err);
+    res.status(500).json({ error: "Failed to fetch tasks" });
+  }
 });
 
-// This section will help you get a single record by id
+// Get a single task
 router.get("/:id", async (req, res) => {
-  let collection = await db.collection("tasks");
-  let query = {_id: new ObjectId(req.params.id)};
-  let result = await collection.findOne(query);
-
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  try {
+    const collection = db.collection("tasks");
+    const task = await collection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    res.status(200).json(task);
+  } catch (err) {
+    console.error("Failed to fetch task:", err);
+    res.status(500).json({ error: "Failed to fetch task" });
+  }
 });
 
-// This section will help you create a new record.
+// Create a new task
 router.post("/", async (req, res) => {
-  let newDocument = {
-    name: req.body.name,
-    position: req.body.position,
-    level: req.body.level,
-  };
-  let collection = await db.collection("tasks");
-  let result = await collection.insertOne(newDocument);
-  res.send(result).status(204);
+  try {
+    const task = {
+      pet_id: new ObjectId(req.body.pet_id),
+      petname: req.body.petname,
+      activity: req.body.activity,
+      description: req.body.description,
+      datetime: new Date(req.body.datetime),
+      status: req.body.status || "Pending",
+    };
+
+    const collection = db.collection("tasks");
+    const result = await collection.insertOne(task);
+    res.status(201).json(result);
+  } catch (err) {
+    console.error("Failed to create task:", err);
+    res.status(500).json({ error: "Failed to create task" });
+  }
 });
 
-// This section will help you update a record by id.
+// Update a task
 router.patch("/:id", async (req, res) => {
-  const query = { _id: new ObjectId(req.params.id) };
-  const updates =  {
-    $set: {
-      name: req.body.name,
-      position: req.body.position,
-      level: req.body.level
-    }
-  };
+  try {
+    const updates = {
+      $set: {
+        pet_id: new ObjectId(req.body.pet_id),
+        petname: req.body.petname,
+        activity: req.body.activity,
+        description: req.body.description,
+        datetime: new Date(req.body.datetime),
+        status: req.body.status,
+      },
+    };
 
-  let collection = await db.collection("tasks");
-  let result = await collection.updateOne(query, updates);
+    const collection = db.collection("tasks");
+    const result = await collection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      updates
+    );
 
-  res.send(result).status(200);
+    if (result.matchedCount === 0)
+      return res.status(404).json({ error: "Task not found" });
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Failed to update task:", err);
+    res.status(500).json({ error: "Failed to update task" });
+  }
 });
 
-// This section will help you delete a record
+// Delete a task
 router.delete("/:id", async (req, res) => {
-  const query = { _id: new ObjectId(req.params.id) };
+  try {
+    const collection = db.collection("tasks");
+    const result = await collection.deleteOne({
+      _id: new ObjectId(req.params.id),
+    });
 
-  const collection = db.collection("tasks");
-  let result = await collection.deleteOne(query);
+    if (result.deletedCount === 0)
+      return res.status(404).json({ error: "Task not found" });
 
-  res.send(result).status(200);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Failed to delete task:", err);
+    res.status(500).json({ error: "Failed to delete task" });
+  }
 });
 
 export default router;

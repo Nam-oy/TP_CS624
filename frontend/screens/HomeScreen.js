@@ -6,7 +6,7 @@ import { colors, images } from './theme'; // adjust the path as needed
 const HomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Pet Care App!</Text>
+      <Text style={styles.title}> Welcome to Pet Care App!</Text>
       <Image source={images.homePetPhoto} style={styles.image} />
 
       <Button

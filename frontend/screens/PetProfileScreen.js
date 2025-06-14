@@ -1,5 +1,5 @@
 // screens/PetProfileScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,17 +8,18 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-} from 'react-native';
-import CenterMessage from './components/CenterMessage'; // Adjust the path as needed
+} from "react-native";
+import CenterMessage from "./components/CenterMessage"; // Adjust path if needed
 
-const API_URL = 'http://127.0.0.1:5050/pets';
+const API_URL = "http://localhost:5050/pets"; // Change this for mobile testing
 
-function PetProfileScreen() {
+function PetProfileScreen({ navigation }) {
   const [pets, setPets] = useState([]);
-  const [name, setName] = useState('');
-  const [species, setSpecies] = useState('');
-  const [age, setAge] = useState('');
+  const [name, setName] = useState("");
+  const [species, setSpecies] = useState("");
+  const [age, setAge] = useState("");
   const [editingPet, setEditingPet] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchPets();
@@ -30,7 +31,7 @@ function PetProfileScreen() {
       const data = await response.json();
       setPets(data);
     } catch (error) {
-      console.error('Error fetching pets:', error);
+      console.error("Error fetching pets:", error);
     }
   };
 
@@ -39,35 +40,30 @@ function PetProfileScreen() {
 
     const newPet = { name, species, age };
     await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newPet),
     });
 
     fetchPets();
-    setName('');
-    setSpecies('');
-    setAge('');
+    clearForm();
   };
 
   const updatePet = async () => {
     if (!editingPet) return;
 
     await fetch(`${API_URL}/${editingPet._id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, species, age }),
     });
 
     fetchPets();
-    setEditingPet(null);
-    setName('');
-    setSpecies('');
-    setAge('');
+    clearForm();
   };
 
   const deletePet = async (id) => {
-    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
     fetchPets();
   };
 
@@ -75,37 +71,60 @@ function PetProfileScreen() {
     setEditingPet(pet);
     setName(pet.name);
     setSpecies(pet.species);
-    setAge(pet.age);
+    setAge(pet.age.toString());
+    setShowForm(true);
+  };
+
+  const clearForm = () => {
+    setName("");
+    setSpecies("");
+    setAge("");
+    setEditingPet(null);
+    setShowForm(false);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Pet Manager</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Species"
-        value={species}
-        onChangeText={setSpecies}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Age"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
+      <Button
+        title={showForm ? "Cancel" : "Add Pet"}
+        onPress={() => {
+          if (showForm) {
+            clearForm();
+          } else {
+            setShowForm(true);
+          }
+        }}
       />
 
-      {editingPet ? (
-        <Button title="Update Pet" onPress={updatePet} />
-      ) : (
-        <Button title="Add Pet" onPress={addPet} />
+      {showForm && (
+        <View style={{ marginTop: 15 }}>
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            value={name}
+            onChangeText={setName}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Species"
+            value={species}
+            onChangeText={setSpecies}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Age"
+            value={age}
+            onChangeText={setAge}
+            keyboardType="numeric"
+          />
+          {editingPet ? (
+            <Button title="Update Pet" onPress={updatePet} />
+          ) : (
+            <Button title="Submit" onPress={addPet} />
+          )}
+        </View>
       )}
 
       <FlatList
@@ -117,6 +136,29 @@ function PetProfileScreen() {
             <Text style={styles.recordText}>Species: {item.species}</Text>
             <Text style={styles.recordText}>Age: {item.age}</Text>
             <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.taskButton}
+                onPress={() =>
+                  navigation.navigate("Add Task", {
+                    petId: item._id,
+                    petName: item.name,
+                  })
+                }
+              >
+                <Text style={styles.buttonText}>Task</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.taskButton}
+                onPress={() =>
+                  navigation.navigate("History", {
+                    petId: item._id,
+                    petName: item.name,
+                  })
+                }
+              >
+                <Text style={styles.buttonText}>History</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.editButton}
                 onPress={() => startEditing(item)}
@@ -144,24 +186,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f7f7f7',
+    backgroundColor: "#f7f7f7",
   },
   header: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
   input: {
     height: 50,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     marginBottom: 15,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   recordItem: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
@@ -169,26 +211,31 @@ const styles = StyleSheet.create({
   },
   recordText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
   },
   editButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     padding: 8,
     borderRadius: 5,
   },
   deleteButton: {
-    backgroundColor: '#FF5733',
+    backgroundColor: "#FF5733",
     padding: 8,
     borderRadius: 5,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  taskButton: {
+    backgroundColor: "#3498db",
+    padding: 8,
+    borderRadius: 5,
   },
 });
