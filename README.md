@@ -1,14 +1,17 @@
 CS624:TeamProject
 
 
+
 🐾 Pet Manager React Native App
 A mobile app built with React Native to manage pets, add and track tasks, and view activity history. Connects to a backend REST API for data storage.
+
 
 
 📋 Overview
 Manage pet profiles (Add, Edit, Delete)
 Add and track tasks for each pet
 View history of completed activities per pet
+
 
 🔄 App Features & Flow
 
@@ -126,5 +129,5 @@ View history of completed activities per pet
     - 📱 Run app on device/emulator with network access.
 
     - 📦 Install dependencies (npm install).
-    
+
     - 🚀 Launch app (npx react-native run-android / run-ios).
