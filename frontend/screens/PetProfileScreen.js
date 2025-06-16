@@ -4,14 +4,16 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
 import CenterMessage from "./components/CenterMessage"; // Adjust path if needed
 
-const API_URL = "http://localhost:5050/pets"; // Change this for mobile testing
+// Change this for mobile testing
+const API_URL = "http://192.168.7.182:5050/pets";
+
+// const API_URL ="http://127.0.0.1:5050/pets";
 
 function PetProfileScreen({ navigation }) {
   const [pets, setPets] = useState([]);
@@ -87,8 +89,9 @@ function PetProfileScreen({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.header}>Pet Manager</Text>
 
-      <Button
-        title={showForm ? "Cancel" : "Add Pet"}
+      {/* Add / Cancel button */}
+      <TouchableOpacity
+        style={[styles.toggleButton, showForm ? styles.cancelButton : styles.addButton]}
         onPress={() => {
           if (showForm) {
             clearForm();
@@ -96,7 +99,9 @@ function PetProfileScreen({ navigation }) {
             setShowForm(true);
           }
         }}
-      />
+      >
+        <Text style={styles.buttonText}>{showForm ? "Cancel" : "Add Pet"}</Text>
+      </TouchableOpacity>
 
       {showForm && (
         <View style={{ marginTop: 15 }}>
@@ -120,9 +125,13 @@ function PetProfileScreen({ navigation }) {
             keyboardType="numeric"
           />
           {editingPet ? (
-            <Button title="Update Pet" onPress={updatePet} />
+            <TouchableOpacity style={[styles.actionButton, styles.updateButton]} onPress={updatePet}>
+              <Text style={styles.buttonText}>Update Pet</Text>
+            </TouchableOpacity>
           ) : (
-            <Button title="Submit" onPress={addPet} />
+            <TouchableOpacity style={[styles.actionButton, styles.submitButton]} onPress={addPet}>
+              <Text style={styles.buttonText}>Submit</Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -229,13 +238,40 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 5,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
   taskButton: {
     backgroundColor: "#3498db",
     padding: 8,
     borderRadius: 5,
+  },
+
+  // New styles for Add/Cancel, Submit, Update buttons
+  toggleButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  addButton: {
+    backgroundColor: "#007bff", // green
+  },
+  cancelButton: {
+    backgroundColor: "#007bff", // red
+  },
+  actionButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  submitButton: {
+    backgroundColor: "#007bff", // blue
+  },
+  updateButton: {
+    backgroundColor: "#ffc107", // amber/yellow for update
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });

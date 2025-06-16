@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -11,9 +10,12 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
-import CenterMessage from "./components/CenterMessage"; // Adjust if needed
+import CenterMessage from "./components/CenterMessage";
 
-const API_URL = "http://localhost:5050/tasks";
+// Change this for mobile testing
+const API_URL = "http://192.168.7.182:5050/tasks";
+
+// const API_URL = "http://localhost:5050/tasks";
 
 function TaskScreen({ navigation }) {
   const route = useRoute();
@@ -25,7 +27,7 @@ function TaskScreen({ navigation }) {
   const [activity, setActivity] = useState("");
   const [description, setDescription] = useState("");
   const [datetime, setDatetime] = useState(new Date());
-  const [status, setStatus] = useState("Pending");
+
   const [editingTask, setEditingTask] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -38,14 +40,22 @@ function TaskScreen({ navigation }) {
   );
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (petId) {
+      fetchTasks();
+    }
+  }, [petId]);
 
   const fetchTasks = async () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      setTasks(data);
+
+      // Filter by pet_id AND status === "pending"
+      const filteredTasks = data.filter(
+        (task) => task.pet_id === petId && task.status === "pending"
+      );
+
+      setTasks(filteredTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
@@ -57,7 +67,6 @@ function TaskScreen({ navigation }) {
     setActivity("");
     setDescription("");
     setDatetime(new Date());
-    setStatus("Pending");
     setEditingTask(null);
     setShowForm(false);
   };
@@ -70,11 +79,11 @@ function TaskScreen({ navigation }) {
 
     const newTask = {
       pet_id: petId,
-      petName,
+      petName: petName,
       activity,
       description,
       datetime: datetime.toISOString(),
-      status,
+      status: "pending",
     };
 
     try {
@@ -95,11 +104,10 @@ function TaskScreen({ navigation }) {
 
     const updatedTask = {
       pet_id: petId,
-      petName,
+      petName: petName,
       activity,
       description,
       datetime: datetime.toISOString(),
-      status,
     };
 
     try {
@@ -115,12 +123,25 @@ function TaskScreen({ navigation }) {
     }
   };
 
-  const deleteTask = async (id) => {
+  const markTaskComplete = async (id) => {
     try {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      // Fetch the original task
+      const res = await fetch(`${API_URL}/${id}`);
+      const originalTask = await res.json();
+
+      // Update the status only
+      const updatedTask = { ...originalTask, status: "completed" };
+
+      // Send the full updated object
+      await fetch(`${API_URL}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedTask),
+      });
+
       fetchTasks();
     } catch (error) {
-      console.error("Error deleting task:", error);
+      console.error("Error marking task as complete:", error);
     }
   };
 
@@ -131,7 +152,6 @@ function TaskScreen({ navigation }) {
     setActivity(task.activity);
     setDescription(task.description);
     setDatetime(new Date(task.datetime));
-    setStatus(task.status);
     setShowForm(true);
   };
 
@@ -144,26 +164,28 @@ function TaskScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Task Manager</Text>
+      <Text style={styles.recordText}>Pet Name: {petName}</Text>
 
-      <Button
-        title={showForm ? "Cancel" : editingTask ? "Edit Task" : "Add Task"}
+      <TouchableOpacity
+        style={[
+          styles.formToggleButton,
+          showForm ? styles.cancelButton : styles.addButton,
+        ]}
         onPress={() => (showForm ? clearForm() : setShowForm(true))}
-      />
+      >
+        <Text style={styles.formToggleButtonText}>
+          {showForm ? "Cancel" : editingTask ? "Edit Task" : "Add Task"}
+        </Text>
+      </TouchableOpacity>
 
       {showForm && (
         <View style={{ marginTop: 15 }}>
           <TextInput
             style={styles.input}
-            placeholder="Pet ID"
-            value={petId}
-            onChangeText={setPetId}
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={styles.input}
             placeholder="Pet Name"
             value={petName}
             onChangeText={setPetName}
+            editable={false}
           />
           <TextInput
             style={styles.input}
@@ -177,16 +199,12 @@ function TaskScreen({ navigation }) {
             value={description}
             onChangeText={setDescription}
           />
-
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={styles.dateButtonText}>
-              {datetime.toLocaleString()}
-            </Text>
+            <Text style={styles.dateButtonText}>{datetime.toLocaleString()}</Text>
           </TouchableOpacity>
-
           {showDatePicker && (
             <DateTimePicker
               value={datetime}
@@ -196,19 +214,14 @@ function TaskScreen({ navigation }) {
               onChange={handleDateChange}
             />
           )}
-
-          <TextInput
-            style={styles.input}
-            placeholder="Status"
-            value={status}
-            onChangeText={setStatus}
-          />
-
-          {editingTask ? (
-            <Button title="Update Task" onPress={updateTask} />
-          ) : (
-            <Button title="Submit Task" onPress={addTask} />
-          )}
+          <TouchableOpacity
+            style={[styles.submitButton, editingTask ? styles.updateButton : null]}
+            onPress={editingTask ? updateTask : addTask}
+          >
+            <Text style={styles.submitButtonText}>
+              {editingTask ? "Update Task" : "Submit Task"}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -217,14 +230,13 @@ function TaskScreen({ navigation }) {
         keyExtractor={(item) => item._id.toString()}
         renderItem={({ item }) => (
           <View style={styles.recordItem}>
-            <Text style={styles.recordText}>Pet ID: {item.pet_id}</Text>
             <Text style={styles.recordText}>Pet Name: {item.petName}</Text>
             <Text style={styles.recordText}>Activity: {item.activity}</Text>
             <Text style={styles.recordText}>Description: {item.description}</Text>
             <Text style={styles.recordText}>
               DateTime: {new Date(item.datetime).toLocaleString()}
             </Text>
-            <Text style={styles.recordText}>Status: {item.status}</Text>
+            <Text style={styles.recordText}>Status: {item.status || "pending"}</Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.editButton}
@@ -233,10 +245,10 @@ function TaskScreen({ navigation }) {
                 <Text style={styles.buttonText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deleteTask(item._id)}
+                style={styles.completeButton}
+                onPress={() => markTaskComplete(item._id)}
               >
-                <Text style={styles.buttonText}>Delete</Text>
+                <Text style={styles.buttonText}>Mark Complete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -292,8 +304,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginRight: 10,
   },
-  deleteButton: {
-    backgroundColor: "#FF5733",
+  completeButton: {
+    backgroundColor: "#2196F3",
     padding: 8,
     borderRadius: 5,
   },
@@ -310,5 +322,38 @@ const styles = StyleSheet.create({
   dateButtonText: {
     fontSize: 16,
     color: "#333",
+  },
+
+  // New styles for the buttons replacing native Button components
+  formToggleButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  cancelButton: {
+    backgroundColor: "#f44336", // red
+  },
+  addButton: {
+    backgroundColor: "#007bff", // green
+  },
+  formToggleButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  submitButton: {
+    backgroundColor: "#2196F3", // blue
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  updateButton: {
+    backgroundColor: "#FF9800", // orange
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });

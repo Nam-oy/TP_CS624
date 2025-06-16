@@ -35,11 +35,11 @@ router.post("/", async (req, res) => {
   try {
     const task = {
       pet_id: new ObjectId(req.body.pet_id),
-      petname: req.body.petname,
+      petName: req.body.petName,
       activity: req.body.activity,
       description: req.body.description,
       datetime: new Date(req.body.datetime),
-      status: req.body.status || "Pending",
+      status: req.body.status || "pending",
     };
 
     const collection = db.collection("tasks");
@@ -57,7 +57,7 @@ router.patch("/:id", async (req, res) => {
     const updates = {
       $set: {
         pet_id: new ObjectId(req.body.pet_id),
-        petname: req.body.petname,
+        petName: req.body.petName,
         activity: req.body.activity,
         description: req.body.description,
         datetime: new Date(req.body.datetime),
